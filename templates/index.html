@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Sender App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .progress {
+            height: 25px;
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1 class="mb-4">Email Sender App</h1>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Sender Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="senderForm">
+                            <div class="mb-3">
+                                <label for="accountFile" class="form-label">Account File</label>
+                                <select class="form-select" id="accountFile" name="account_file" required>
+                                    <option value="">Select account file</option>
+                                    {% for file in account_files %}
+                                    <option value="{{ file }}">{{ file }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="mt-2">
+                                    <a href="/accounts" class="btn btn-sm btn-outline-primary">View/Edit Accounts</a>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="dataFile" class="form-label">Data File</label>
+                                <select class="form-select" id="dataFile" name="data_file" required>
+                                    <option value="">Select data file</option>
+                                    {% for file in data_files %}
+                                    <option value="{{ file }}">{{ file }}</option>
+                                    {% endfor %}
+                                </select>
+                                <div class="mt-2">
+                                    <a href="/data" class="btn btn-sm btn-outline-primary">View Data Files</a>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="subjects" class="form-label">Email Subjects (one per line)</label>
+                                <textarea class="form-control" id="subjects" name="subjects" rows="3" placeholder="Subject line 1
+Subject line 2
+Subject line 3" required></textarea>
+                                <div class="form-text">Enter one subject per line. These will rotate with sender names.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="fromNames" class="form-label">Sender Names (one per line)</label>
+                                <textarea class="form-control" id="fromNames" name="from_names" rows="3" placeholder="John Doe
+Jane Smith
+Alex Johnson" required></textarea>
+                                <div class="form-text">Enter one sender name per line. These will rotate with subjects.</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="body" class="form-label">Email Body</label>
+                                <textarea class="form-control" id="body" name="body" rows="10" required>{{ email_template }}</textarea>
+                                <div class="d-flex justify-content-end mt-2">
+                                    <button type="button" id="saveTemplateBtn" class="btn btn-success">Save Template</button>
+                                </div>
+                                <div class="form-text">
+                                    <p>The email body supports randomization tags:</p>
+                                    <ul>
+                                        <li>Unique tags: [ua_size], [ual_size], [uau_size], [uan_size], [uanl_size], [uanu_size], [un_size], [uhu_size], [uhl_size]</li>
+                                        <li>Random tags: [a_size], [al_size], [au_size], [an_size], [anl_size], [anu_size], [n_size], [hu_size], [hl_size]</li>
+                                        <li>Size can be a fixed number (e.g., _12) or a range (e.g., _5_15)</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="speed" class="form-label">Sending Speed (emails per hour)</label>
+                                    <input type="number" class="form-control" id="speed" name="speed" value="720" min="1" step="1" required>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="startLine" class="form-label">Start Line</label>
+                                    <input type="number" class="form-control" id="startLine" name="start_line" value="0" min="0" required>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="count" class="form-label">Email Count (0 = all)</label>
+                                    <input type="number" class="form-control" id="count" name="count" value="0" min="0" required>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="testAfter" class="form-label">Test Email Interval</label>
+                                    <input type="number" class="form-control" id="testAfter" name="test_after" value="50" min="0" required>
+                                    <div class="form-text">Send a test email after every X emails (0 to disable)</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Test Email Feature -->
+                            <div class="mb-3">
+                                <label for="testEmail" class="form-label">Test Email Address</label>
+                                <div class="input-group">
+                                    <input type="email" class="form-control" id="testEmail" name="testEmail" placeholder="Enter email for testing">
+                                    <input type="number" class="form-control" id="testCount" placeholder="Number of test emails" value="1" min="1" style="max-width: 150px;">
+                                    <button type="button" id="testBtn" class="btn btn-info">Send Test Email(s)</button>
+                                </div>
+                                <div class="form-text">Send test emails to verify your configuration. Use the number input to test multiple subject/sender combinations.</div>
+                            </div>
+                            
+                            <div class="d-flex gap-2">
+                                <button type="button" id="startBtn" class="btn btn-primary">Start Sending</button>
+                                <button type="button" id="pauseBtn" class="btn btn-warning" disabled>Pause</button>
+                                <button type="button" id="stopBtn" class="btn btn-danger" disabled>Stop</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Upload Files</h5>
+                    </div>
+                    <div class="card-body">
+                        <form action="/upload" method="post" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="fileType" class="form-label">File Type</label>
+                                <select class="form-select" id="fileType" name="file_type" required>
+                                    <option value="accounts">Accounts</option>
+                                    <option value="data">Data</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="file" class="form-label">Select File</label>
+                                <input class="form-control" type="file" id="file" name="file" required>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success">Upload</button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Sending Progress</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="statusContainer">
+                            <p><strong>Status:</strong> <span id="sendingStatus">Not sending</span></p>
+                            <p><strong>Current Account:</strong> <span id="currentAccount">-</span></p>
+                            <p><strong>Data File:</strong> <span id="currentDataFile">-</span></p>
+                            <p><strong>Progress:</strong> <span id="progressText">0/0</span></p>
+                            
+                            <div class="progress">
+                                <div id="progressBar" class="progress-bar progress-bar-striped" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+       const startBtn = document.getElementById('startBtn');
+       const saveTemplateBtn = document.getElementById('saveTemplateBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const testBtn = document.getElementById('testBtn');
+        const testEmail = document.getElementById('testEmail');
+        const senderForm = document.getElementById('senderForm');
+        let statusInterval;
+        
+        // Test email functionality
+        testBtn.addEventListener('click', () => {
+            const formData = new FormData(senderForm);
+            const testEmailValue = testEmail.value.trim();
+            const testCountValue = document.getElementById('testCount').value;
+            
+            if (!testEmailValue) {
+                alert('Please enter a test email address');
+                return;
+            }
+            
+            formData.append('test_email', testEmailValue);
+            formData.append('test_count', testCountValue);
+            
+            fetch('/test-email', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(data.message);
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while sending the test email');
+            });
+        });
+        
+        // Start sending
+        startBtn.addEventListener('click', () => {
+            const formData = new FormData(senderForm);
+            
+            fetch('/start', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    startBtn.disabled = true;
+                    pauseBtn.disabled = false;
+                    stopBtn.disabled = false;
+                    startStatusPolling();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while starting the sender');
+            });
+        });
+        
+        // Pause/Resume sending
+        pauseBtn.addEventListener('click', () => {
+            fetch('/pause', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    const isPaused = data.message.includes('paused');
+                    pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+        
+        // Stop sending
+        stopBtn.addEventListener('click', () => {
+            fetch('/stop', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    startBtn.disabled = false;
+                    pauseBtn.disabled = true;
+                    stopBtn.disabled = true;
+                    pauseBtn.textContent = 'Pause';
+                    stopStatusPolling();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+        
+        // Start status polling
+        function startStatusPolling() {
+            statusInterval = setInterval(updateStatus, 1000);
+        }
+        
+        // Stop status polling
+        function stopStatusPolling() {
+            clearInterval(statusInterval);
+        }
+        
+        // Update status
+        function updateStatus() {
+            fetch('/status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_sending) {
+                    sendingStatus.textContent = data.is_paused ? 'Paused' : 'Sending';
+                } else {
+                    sendingStatus.textContent = 'Not sending';
+                    startBtn.disabled = false;
+                    pauseBtn.disabled = true;
+                    stopBtn.disabled = true;
+                    pauseBtn.textContent = 'Pause';
+                    stopStatusPolling();
+                }
+                
+                currentAccount.textContent = data.current_account || '-';
+                currentDataFile.textContent = data.current_data_file || '-';
+                
+                if (data.total > 0) {
+                    const progress = Math.round((data.progress / data.total) * 100);
+                    progressText.textContent = `${data.progress}/${data.total}`;
+                    progressBar.style.width = `${progress}%`;
+                    progressBar.textContent = `${progress}%`;
+                } else {
+                    progressText.textContent = '0/0';
+                    progressBar.style.width = '0%';
+                    progressBar.textContent = '';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+        
+        // Save email template
+        saveTemplateBtn.addEventListener('click', () => {
+            const body = document.getElementById('body').value;
+            
+            if (!body) {
+                alert('Email body cannot be empty');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('body', body);
+            
+            fetch('/save-template', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Email template saved successfully!');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while saving the template');
+            });
+        });
+        
+        // Initial status check
+        updateStatus();
+    </script>
+    
+</body>
+</html>
